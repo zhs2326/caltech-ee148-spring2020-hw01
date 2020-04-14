@@ -59,18 +59,12 @@ def non_maximum_suppression(candidates, IOU_threshold):
         for bounding_box in bounding_boxes:
             x3, y3, x4, y4 = bounding_box[1], bounding_box[0], bounding_box[3], bounding_box[2]
             #calculate the IOU here
-            if x2 >= x3 and y2 >= y3:
-                intersection = (x2-x3)*(y2-y3)
-                union = (x2-x1)*(y2-y1)+(x4-x3)*(y4-y3)-intersection
-            elif x4 >= x1 and y2 >= y3:
-                intersection = (x4 - x1) * (y2 - y3)
-                union = (x2 - x1) * (y2 - y1) +(x4-x3)*(y4-y3) - intersection
-            elif x2 >= x3 and y4 >= y1:
-                intersection = (x2 - x3) * (y4 - y1)
-                union = (x2 - x1) * (y2 - y1) +(x4-x3)*(y4-y3) - intersection
-            elif x4 >= x1 and y4 >= y1:
-                intersection = (x4 - x1) * (y4 - y1)
-                union = (x2 - x1) * (y2 - y1) +(x4-x3)*(y4-y3) - intersection
+            x5, y5, x6, y6 = max(x1, x3), max(y1, y3), min(x2, x4), min(y2, y4)
+            if x5 <= x6 and y5 <= y6:
+                intersection = (x6 - x5) * (y6 - y5)
+            else:
+                intersection = 0
+            union = (x2 - x1) * (y2 - y1) + (x4 - x3) * (y4 - y3) - intersection
             IOU = intersection / union
 
             if IOU >= IOU_threshold:
@@ -104,40 +98,13 @@ def detect_red_light(I, template, ax):
     '''
     BEGIN YOUR CODE
     '''
-    
-    '''
-    As an example, here's code that generates between 1 and 5 random boxes
-    of fixed size and returns the results in the proper format.
-    '''
 
-    '''
-    box_height = 8
-    box_width = 6
-    
-    num_boxes = np.random.randint(1,5) 
-    
-    for i in range(num_boxes):
-        (n_rows,n_cols,n_channels) = np.shape(I)
-        
-        tl_row = np.random.randint(n_rows - box_height)
-        tl_col = np.random.randint(n_cols - box_width)
-        br_row = tl_row + box_height
-        br_col = tl_col + box_width
-        
-        bounding_boxes.append([tl_row,tl_col,br_row,br_col]) 
-    '''
     #different template size
     sizes = [0.25, 0.5, 1]
 
     for size in sizes:
         resized_template = resize(template, size)
 
-
-        #fig2, ax2 = plt.subplots(1)
-        #ax2.imshow(resized_template)
-        #plt.show()
-
-        #normalize template
         normalized_template = normalize(resized_template)
 
         img_h, img_w, img_c = I.shape
@@ -158,8 +125,6 @@ def detect_red_light(I, template, ax):
                 if correlation > matched_filtering_threshold:
                     candidates.append([correlation, i, j, i+template_h-1, j+template_w-1])
 
-        #do non maximum suppression
-        #bounding_boxes.extend(non_maximum_suppression(candidates, IOU_threshold))
         bounding_boxes.extend(candidates)
 
     # do non maximum suppression
@@ -171,8 +136,6 @@ def detect_red_light(I, template, ax):
         x1, y1, x2, y2 = bounding_box[1], bounding_box[0], bounding_box[3], bounding_box[2]
         rect = patches.Rectangle((x1, y1), x2-x1, y2-y1, linewidth=1, edgecolor='yellow', facecolor='none')
         ax.add_patch(rect)
-
-    print(bounding_boxes)
 
     '''
     END YOUR CODE
@@ -214,9 +177,6 @@ for i in range(len(file_names)):
 
     fig, ax = plt.subplots(1)
     ax.imshow(I)
-
-
-
 
     preds[file_names[i]] = detect_red_light(I, template, ax)
 
